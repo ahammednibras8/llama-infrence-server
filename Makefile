@@ -14,12 +14,13 @@ CLI_BIN := $(LLAMA_DIR)/build/bin/llama-completion
 CLI_CTX ?= 4096
 CLI_N_PREDICT ?= 128
 CLI_SEED ?= 42
+CLI_GPU_LAYERS ?= auto
 CLI_PROMPT ?= Explain in one short paragraph what unified memory means on Apple Silicon.
 CLI_LOG ?= $(LOG_DIR)/cli-baseline.txt
 
 .DEFAULT_GOAL := help
 
-.PHONY: help add-submodule submodule venv install download-model model-path cli-baseline build-llama clean-llama run-server
+.PHONY: help add-submodule submodule venv install download-model model-path cli-baseline cli-all-metal build-llama clean-llama run-server
 
 help: ## Show every available target and what it does
 	@echo "Available targets:"
@@ -49,12 +50,18 @@ cli-baseline: ## Run the raw llama-completion baseline and save a benchmark log
 		-m $(MODEL_PATH) \
 		-c $(CLI_CTX) \
 		-n $(CLI_N_PREDICT) \
+		-ngl $(CLI_GPU_LAYERS) \
 		-no-cnv \
 		--temp 0 \
 		--seed $(CLI_SEED) \
 		--perf \
 		-p "$(CLI_PROMPT)" \
 		2>&1 | tee $(CLI_LOG)
+
+cli-all-metal: CLI_GPU_LAYERS = all
+cli-all-metal: CLI_LOG = $(if $(filter $(LOG_DIR)/cli-baseline.txt,$(CLI_LOG)),$(LOG_DIR)/cli-all-metal.txt,$(CLI_LOG))
+cli-all-metal: ## Run the raw llama-completion baseline with all 33 layers forced to Metal
+	$(MAKE) cli-baseline CLI_GPU_LAYERS="$(CLI_GPU_LAYERS)" CLI_LOG="$(CLI_LOG)"
 
 build-llama: ## Configure and build llama.cpp with the macOS SDK libc++ workaround
 	cmake -S $(LLAMA_DIR) -B $(LLAMA_DIR)/build -DCMAKE_CXX_FLAGS='-isystem $(SDK_CXX_HEADERS)'

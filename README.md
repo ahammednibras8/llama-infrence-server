@@ -119,6 +119,7 @@ This runs `llama-completion` directly against the local GGUF model, with:
 - `--perf` enabled for internal timing output
 - deterministic settings: `--temp 0`, `--seed 42`
 - fixed context size: `4096`
+- default GPU offload mode: `-ngl auto` (`31/33` layers on this machine)
 - benchmark log saved under `results/logs/`
 
 Record these fields from the output:
@@ -128,6 +129,14 @@ Record these fields from the output:
 - `common_perf_print: eval time`
 - `common_perf_print: total time`
 - `/usr/bin/time -l` maximum resident set size
+
+Optional comparison experiment:
+
+```bash
+make cli-all-metal CLI_LOG=results/logs/cli-all-metal-01.txt
+```
+
+This forces `-ngl all` and attempts full Metal offload of all `33/33` layers.
 
 ### 8. Start the Inference Server
 
@@ -189,6 +198,7 @@ Main targets:
 - `make download-model`
 - `make model-path`
 - `make cli-baseline`
+- `make cli-all-metal`
 - `make build-llama`
 - `make clean-llama`
 - `make run-server`
@@ -215,6 +225,7 @@ Each benchmark run records: hardware state, llama.cpp commit hash, model file ha
 ### Raw CLI Baseline
 
 - Tool: `llama-completion`
+- GPU layers: `auto`
 - Prompt: `Explain in one short paragraph what unified memory means on Apple Silicon.`
 - Load time: `14271.82 ms`
 - Prompt eval: `263.43 ms / 17 tokens` (`64.53 tokens/sec`)
@@ -224,6 +235,20 @@ Each benchmark run records: hardware state, llama.cpp commit hash, model file ha
 - Max RSS: `2913042432 bytes` (`2.91 GB`)
 - Metal memory total: `5461 MiB`
 - Notes: `31/33` layers offloaded to GPU, context auto-fit observed at `4096`
+
+### Full Metal Comparison
+
+- Tool: `llama-completion`
+- GPU layers: `all`
+- Prompt: `Explain in one short paragraph what unified memory means on Apple Silicon.`
+- Load time: `12723.11 ms`
+- Prompt eval: `328.95 ms / 17 tokens` (`51.68 tokens/sec`)
+- Generation: `5702.88 ms / 98 tokens` (`17.18 tokens/sec`)
+- Total inference time: `6194.04 ms / 115 tokens`
+- Wall time: `19.31 s`
+- Max RSS: `2500460544 bytes` (`2.50 GB`)
+- Metal memory total: `5461 MiB`
+- Notes: `33/33` layers offloaded to GPU, free Metal headroom reduced to `741 MiB`, slightly worse inference latency than the `31/33` baseline
 
 ### Memory Usage
 
