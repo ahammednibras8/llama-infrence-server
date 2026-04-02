@@ -169,12 +169,13 @@ llama-inference-server/
 │   └── handler.py                # Request/response parsing logic
 │
 ├── benchmark/
+│   ├── README.md                 # Explains benchmark code vs benchmark results
 │   ├── run.py                    # Runs all benchmark scenarios
 │   ├── memory.py                 # RAM profiling at each stage
 │   └── concurrency.py            # Two simultaneous requests test
 │
 ├── results/
-│   ├── benchmarks.md             # Raw numbers, every run, timestamped
+│   ├── benchmarks.md             # Canonical tracked benchmark record
 │   └── logs/                     # Per-run output logs (gitignored)
 │
 ├── .gitignore
@@ -229,49 +230,17 @@ Each benchmark run records: hardware state, llama.cpp commit hash, model file ha
 
 ## Results
 
-> *The CLI baseline below is the first measured data point. Server and concurrency results will be added after the HTTP layer is built.*
+`README.md` now keeps only the headline comparison. The tracked source of truth for extracted benchmark data is [`results/benchmarks.md`](results/benchmarks.md), and the raw per-run command logs stay local under `results/logs/`.
 
-### Raw CLI Baseline
+### Current CLI Summary
 
-- Tool: `llama-completion`
-- GPU layers: `auto`
-- Prompt: `Explain in one short paragraph what unified memory means on Apple Silicon.`
-- Load time: `14271.82 ms`
-- Prompt eval: `263.43 ms / 17 tokens` (`64.53 tokens/sec`)
-- Generation: `5635.77 ms / 98 tokens` (`17.39 tokens/sec`)
-- Total inference time: `5910.06 ms / 115 tokens`
-- Wall time: `20.78 s`
-- Max RSS: `2913042432 bytes` (`2.91 GB`)
-- Metal memory total: `5461 MiB`
-- Notes: `31/33` layers offloaded to GPU, context auto-fit observed at `4096`
+| Mode | Offload | Load Time | Prompt Throughput | Generation Throughput | Total Inference | Wall Time |
+|------|---------|-----------|-------------------|-----------------------|-----------------|-----------|
+| Auto Metal | `31/33` | `14271.82 ms` | `64.53 tok/s` | `17.39 tok/s` | `5910.06 ms` | `20.78 s` |
+| Full Metal | `33/33` | `12723.11 ms` | `51.68 tok/s` | `17.18 tok/s` | `6194.04 ms` | `19.31 s` |
+| CPU-only | `0/33` | `61582.60 ms` | `3.45 tok/s` | `11.34 tok/s` | `13484.44 ms` | `75.79 s` |
 
-### Full Metal Comparison
-
-- Tool: `llama-completion`
-- GPU layers: `all`
-- Prompt: `Explain in one short paragraph what unified memory means on Apple Silicon.`
-- Load time: `12723.11 ms`
-- Prompt eval: `328.95 ms / 17 tokens` (`51.68 tokens/sec`)
-- Generation: `5702.88 ms / 98 tokens` (`17.18 tokens/sec`)
-- Total inference time: `6194.04 ms / 115 tokens`
-- Wall time: `19.31 s`
-- Max RSS: `2500460544 bytes` (`2.50 GB`)
-- Metal memory total: `5461 MiB`
-- Notes: `33/33` layers offloaded to GPU, free Metal headroom reduced to `741 MiB`, slightly worse inference latency than the `31/33` baseline
-
-### CPU-Only Comparison
-
-- Tool: `llama-completion`
-- GPU layers: `0`
-- Prompt: `Explain in one short paragraph what unified memory means on Apple Silicon.`
-- Load time: `61582.60 ms`
-- Prompt eval: `4927.31 ms / 17 tokens` (`3.45 tokens/sec`)
-- Generation: `8200.84 ms / 93 tokens` (`11.34 tokens/sec`)
-- Total inference time: `13484.44 ms / 110 tokens`
-- Wall time: `75.79 s`
-- Max RSS: `4524343296 bytes` (`4.52 GB`)
-- Metal memory total: `0 MiB`
-- Notes: `0/33` layers offloaded to GPU, model and KV cache stayed on host memory, clearly slower than both Metal-backed runs
+The reliable takeaway so far: on this machine, `-ngl auto` is the best steady-state baseline, `-ngl all` is a useful comparison experiment, and `-ngl 0` is the control condition for showing what Metal changes.
 
 ### Memory Usage
 
@@ -315,10 +284,11 @@ Each benchmark run records: hardware state, llama.cpp commit hash, model file ha
 
 ---
 
-## Raw Benchmark Logs
+## Benchmark Records
 
-See [`results/benchmarks.md`](results/benchmarks.md) for full run logs with timestamps, hardware state, and generation parameters for every experiment.
-The first raw CLI log is stored under `results/logs/cli-baseline-02.txt`.
+- [`benchmark/README.md`](benchmark/README.md) explains what belongs in `benchmark/`.
+- [`results/benchmarks.md`](results/benchmarks.md) is the canonical tracked benchmark record.
+- `results/logs/` holds raw run output such as `cli-baseline-02.txt`, `cli-all-metal-01.txt`, and `cli-cpu-only-01.txt`.
 
 ---
 
