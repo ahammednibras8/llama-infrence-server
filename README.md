@@ -40,12 +40,18 @@ This is not a production server. It is a controlled experiment with a clean HTTP
 
 ## Setup
 
+Start with:
+
+```text
+make help
+```
+
 ### 1. Add `llama.cpp` as a Git Submodule
 
-Use this once when setting up the repository structure for the first time.
+Use this once when setting up the repository structure for the first time:
 
 ```bash
-git submodule add https://github.com/ggerganov/llama.cpp.git llama.cpp
+make add-submodule
 git commit -m "Add llama.cpp as a submodule"
 ```
 
@@ -57,45 +63,49 @@ This creates:
 
 ### 2. Initialize the Submodule After Clone
 
-Anyone cloning the repo later should pull the pinned submodule commit with:
+For an existing clone, pull the pinned submodule commit with:
 
 ```bash
-git submodule update --init --recursive
+make submodule
 ```
 
-Or clone the repository with:
+You can also clone with submodules from the start:
 
 ```bash
 git clone --recurse-submodules <your-repo-url>
 ```
 
-### 3. Compile `llama.cpp`
+### 3. Create the Python Environment
 
 ```bash
-cd llama.cpp
-
-# For Apple Silicon with Metal acceleration
-cmake -B build -DGGML_METAL=ON
-cmake --build build --config Release -j$(sysctl -n hw.ncpu)
+make venv
 ```
 
-### 4. Download Model
+### 4. Install Python Dependencies
+
+```bash
+make install
+```
+
+### 5. Compile `llama.cpp`
+
+```bash
+make build-llama
+```
+
+This target uses the macOS SDK `libc++` header path as a workaround for the broken Command Line Tools libc++ install on this machine.
+
+### 6. Download Model
 
 ```bash
 # Example — fill in your actual model source
 # huggingface-cli download <model-repo> --include "*.gguf" --local-dir ./models
 ```
 
-### 5. Install Python Dependencies
+### 7. Start the Inference Server
 
 ```bash
-pip install -r requirements.txt
-```
-
-### 6. Start the Inference Server
-
-```bash
-python server/server.py
+make run-server
 ```
 
 ---
@@ -124,6 +134,7 @@ llama-inference-server/
 │   └── logs/                     # Per-run output logs (gitignored)
 │
 ├── .gitignore
+├── Makefile
 ├── requirements.txt
 └── README.md
 ```
@@ -133,6 +144,24 @@ llama-inference-server/
 1. `llama.cpp` is a submodule, not a copy-paste. This pins an exact upstream commit so benchmark runs can be reproduced against the same compiled source.
 2. `models/` is gitignored except for `.gitkeep`. GGUF artifacts stay out of the repo; the README should record the exact model name and download source instead.
 3. `benchmark/` stays separate from `server/`. The server is the system under test, and the benchmark code is the measurement layer around it.
+
+### Automation
+
+The root `Makefile` is the main interface for repeated project commands. Start with:
+
+```bash
+make help
+```
+
+Main targets:
+
+- `make add-submodule`
+- `make submodule`
+- `make venv`
+- `make install`
+- `make build-llama`
+- `make clean-llama`
+- `make run-server`
 
 ---
 
