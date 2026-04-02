@@ -20,9 +20,9 @@ This is not a production server. It is a controlled experiment with a clean HTTP
 | OS | macOS — Apple Silicon (ARM64) |
 | Accelerator | Metal (Apple GPU via llama.cpp Metal backend) |
 | llama.cpp commit | `<!-- fill in: git rev-parse --short HEAD -->` |
-| Model | `<!-- e.g. Mistral-7B-Instruct-v0.2 -->` |
-| Quantization tested | `<!-- e.g. Q4_K_M, Q8_0 -->` |
-| Python | `<!-- e.g. 3.11.x -->` |
+| Model | `Mistral-7B-Instruct-v0.2.Q4_K_M.gguf` |
+| Quantization tested | `Q4_K_M` |
+| Python | `3.11.x (uv-managed .venv)` |
 
 ---
 
@@ -87,20 +87,25 @@ make venv
 make install
 ```
 
-### 5. Compile `llama.cpp`
+### 5. Download Model
+
+```bash
+make download-model
+```
+
+This downloads:
+
+- Hugging Face repo: `QuantFactory/Mistral-7B-Instruct-v0.2-GGUF`
+- local file: `models/Mistral-7B-Instruct-v0.2.Q4_K_M.gguf`
+- quantization: `Q4_K_M`
+
+### 6. Compile `llama.cpp`
 
 ```bash
 make build-llama
 ```
 
 This target uses the macOS SDK `libc++` header path as a workaround for the broken Command Line Tools libc++ install on this machine.
-
-### 6. Download Model
-
-```bash
-# Example — fill in your actual model source
-# huggingface-cli download <model-repo> --include "*.gguf" --local-dir ./models
-```
 
 ### 7. Start the Inference Server
 
@@ -159,6 +164,8 @@ Main targets:
 - `make submodule`
 - `make venv`
 - `make install`
+- `make download-model`
+- `make model-path`
 - `make build-llama`
 - `make clean-llama`
 - `make run-server`

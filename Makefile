@@ -1,13 +1,18 @@
 LLAMA_DIR := llama.cpp
 VENV_DIR := .venv
+MODEL_DIR := models
 PYTHON_VERSION ?= 3.11
 SDK_CXX_HEADERS := /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1
 JOBS ?= $(shell sysctl -n hw.ncpu 2>/dev/null || echo 8)
 LLAMA_REPO := https://github.com/ggerganov/llama.cpp.git
+MODEL_REPO := QuantFactory/Mistral-7B-Instruct-v0.2-GGUF
+MODEL_PATTERN := *Q4_K_M.gguf
+MODEL_FILE := Mistral-7B-Instruct-v0.2.Q4_K_M.gguf
+MODEL_PATH := $(MODEL_DIR)/$(MODEL_FILE)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help add-submodule submodule venv install build-llama clean-llama run-server
+.PHONY: help add-submodule submodule venv install download-model model-path build-llama clean-llama run-server
 
 help: ## Show every available target and what it does
 	@echo "Available targets:"
@@ -24,6 +29,12 @@ venv: ## Create the local uv-managed virtual environment in .venv
 
 install: ## Install Python dependencies into the local .venv
 	uv pip install --python $(VENV_DIR)/bin/python -r requirements.txt
+
+download-model: ## Download Mistral 7B Instruct v0.2 GGUF in Q4_K_M into models/
+	uvx hf download $(MODEL_REPO) --include "$(MODEL_PATTERN)" --local-dir $(MODEL_DIR)
+
+model-path: ## Print the expected local path for the benchmark model
+	@echo $(MODEL_PATH)
 
 build-llama: ## Configure and build llama.cpp with the macOS SDK libc++ workaround
 	cmake -S $(LLAMA_DIR) -B $(LLAMA_DIR)/build -DCMAKE_CXX_FLAGS='-isystem $(SDK_CXX_HEADERS)'
