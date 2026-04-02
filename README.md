@@ -30,11 +30,11 @@ This is not a production server. It is a controlled experiment with a clean HTTP
 
 > These are pre-experiment predictions. Reality will confirm or break them — the divergence is the point.
 
-1. **RAM** — A 7B model at Q4_K_M quantization will consume approximately `__` GB of unified memory after load.
-2. **Concurrency degradation** — Two simultaneous requests will reduce throughput by approximately `__%`, not `50%`, because `<!-- your reasoning here -->`.
-3. **Quantization quality** — Q4 vs Q8 quality delta will be noticeable on `<!-- reasoning tasks / simple retrieval / math -->` but not on `<!-- other task type -->`.
-4. **Time-to-first-token** — TTFT will be dominated by `<!-- prompt eval / KV cache / other factor -->` rather than generation speed.
-5. **Metal acceleration** — Metal backend will `<!-- hypothesis about what it changes vs CPU-only -->`.
+1. **RAM** — A 7B model at Q4_K_M quantization will consume approximately `5.5` GB of unified memory after load.
+2. **Concurrency degradation** — Two simultaneous requests will reduce per-request throughput by approximately `35%`, not `50%`, because the bottleneck is shared memory bandwidth and backend scheduling, not two perfectly isolated compute lanes.
+3. **Quantization quality** — Q4 vs Q8 quality delta will be noticeable on multi-step reasoning, exact instruction following, and borderline factual recall, but not on short-form chat, summarization, or simple retrieval.
+4. **Time-to-first-token** — TTFT will be dominated by prompt evaluation rather than generation speed.
+5. **Metal acceleration** — Metal backend will make this model usable on the M2 Air and improve tokens/sec materially over CPU-only inference, but memory pressure will remain the main constraint under concurrent load.
 
 ---
 
