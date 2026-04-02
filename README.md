@@ -40,15 +40,16 @@ This is not a production server. It is a controlled experiment with a clean HTTP
 
 ## Setup
 
-### 1. Clone and Compile llama.cpp
+### 1. Initialize and Compile `llama.cpp`
 
 ```bash
-git clone https://github.com/ggerganov/llama.cpp
+# `llama.cpp/` is expected to exist as a git submodule at the repo root
+git submodule update --init --recursive
 cd llama.cpp
 
 # For Apple Silicon with Metal acceleration
 cmake -B build -DGGML_METAL=ON
-cmake --build build --config Release -j$(nproc)
+cmake --build build --config Release -j$(sysctl -n hw.ncpu)
 ```
 
 ### 2. Download Model
@@ -67,23 +68,44 @@ pip install -r requirements.txt
 ### 4. Start the Inference Server
 
 ```bash
-python server.py
+python server/server.py
 ```
 
 ---
 
 ## Project Structure
 
-```
-.
-├── server.py              # Raw Python HTTP wrapper over llama.cpp
-├── benchmark.py           # Load testing and measurement script
-├── models/                # GGUF model files (gitignored)
+```text
+llama-inference-server/
+│
+├── llama.cpp/                    # Git submodule — pulled from source
+│
+├── models/                       # GGUF model files
+│   └── .gitkeep                  # Folder tracked, models gitignored
+│
+├── server/
+│   ├── server.py                 # Raw Python HTTP wrapper (the core build)
+│   └── handler.py                # Request/response parsing logic
+│
+├── benchmark/
+│   ├── run.py                    # Runs all benchmark scenarios
+│   ├── memory.py                 # RAM profiling at each stage
+│   └── concurrency.py            # Two simultaneous requests test
+│
 ├── results/
-│   └── benchmarks.md      # Raw numbers from every experiment run
+│   ├── benchmarks.md             # Raw numbers, every run, timestamped
+│   └── logs/                     # Per-run output logs (gitignored)
+│
+├── .gitignore
 ├── requirements.txt
 └── README.md
 ```
+
+### Structure Rules
+
+1. `llama.cpp` is a submodule, not a copy-paste. This pins an exact upstream commit so benchmark runs can be reproduced against the same compiled source.
+2. `models/` is gitignored except for `.gitkeep`. GGUF artifacts stay out of the repo; the README should record the exact model name and download source instead.
+3. `benchmark/` stays separate from `server/`. The server is the system under test, and the benchmark code is the measurement layer around it.
 
 ---
 

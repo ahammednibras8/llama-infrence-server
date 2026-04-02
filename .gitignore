@@ -1,0 +1,11 @@
+# Model artifacts
+models/*
+!models/.gitkeep
+
+# Benchmark logs
+results/logs/*
+!results/logs/.gitkeep
+
+# Python cache
+__pycache__/
+*.py[cod]
