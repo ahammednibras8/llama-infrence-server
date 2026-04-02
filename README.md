@@ -40,11 +40,38 @@ This is not a production server. It is a controlled experiment with a clean HTTP
 
 ## Setup
 
-### 1. Initialize and Compile `llama.cpp`
+### 1. Add `llama.cpp` as a Git Submodule
+
+Use this once when setting up the repository structure for the first time.
 
 ```bash
-# `llama.cpp/` is expected to exist as a git submodule at the repo root
+git submodule add https://github.com/ggerganov/llama.cpp.git llama.cpp
+git commit -m "Add llama.cpp as a submodule"
+```
+
+This creates:
+
+- `llama.cpp/` as a tracked submodule directory
+- `.gitmodules` in the repo root
+- a pinned `llama.cpp` commit in your main repo history
+
+### 2. Initialize the Submodule After Clone
+
+Anyone cloning the repo later should pull the pinned submodule commit with:
+
+```bash
 git submodule update --init --recursive
+```
+
+Or clone the repository with:
+
+```bash
+git clone --recurse-submodules <your-repo-url>
+```
+
+### 3. Compile `llama.cpp`
+
+```bash
 cd llama.cpp
 
 # For Apple Silicon with Metal acceleration
@@ -52,20 +79,20 @@ cmake -B build -DGGML_METAL=ON
 cmake --build build --config Release -j$(sysctl -n hw.ncpu)
 ```
 
-### 2. Download Model
+### 4. Download Model
 
 ```bash
 # Example — fill in your actual model source
 # huggingface-cli download <model-repo> --include "*.gguf" --local-dir ./models
 ```
 
-### 3. Install Python Dependencies
+### 5. Install Python Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Start the Inference Server
+### 6. Start the Inference Server
 
 ```bash
 python server/server.py
