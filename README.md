@@ -19,9 +19,10 @@ This is not a production server. It is a controlled experiment with a clean HTTP
 | Hardware | MacBook Air M2 — 8GB Unified Memory |
 | OS | macOS — Apple Silicon (ARM64) |
 | Accelerator | Metal (Apple GPU via llama.cpp Metal backend) |
-| llama.cpp commit | `<!-- fill in: git rev-parse --short HEAD -->` |
+| llama.cpp commit | `a1cfb6453` |
 | Model | `Mistral-7B-Instruct-v0.2.Q4_K_M.gguf` |
 | Quantization tested | `Q4_K_M` |
+| Effective context size | `4096` |
 | Python | `3.11.x (uv-managed .venv)` |
 
 ---
@@ -107,7 +108,28 @@ make build-llama
 
 This target uses the macOS SDK `libc++` header path as a workaround for the broken Command Line Tools libc++ install on this machine.
 
-### 7. Start the Inference Server
+### 7. Measure the Raw CLI Baseline
+
+```bash
+make cli-baseline CLI_LOG=results/logs/cli-baseline-01.txt
+```
+
+This runs `llama-completion` directly against the local GGUF model, with:
+
+- `--perf` enabled for internal timing output
+- deterministic settings: `--temp 0`, `--seed 42`
+- fixed context size: `4096`
+- benchmark log saved under `results/logs/`
+
+Record these fields from the output:
+
+- `common_perf_print: load time`
+- `common_perf_print: prompt eval time`
+- `common_perf_print: eval time`
+- `common_perf_print: total time`
+- `/usr/bin/time -l` maximum resident set size
+
+### 8. Start the Inference Server
 
 ```bash
 make run-server
@@ -166,6 +188,7 @@ Main targets:
 - `make install`
 - `make download-model`
 - `make model-path`
+- `make cli-baseline`
 - `make build-llama`
 - `make clean-llama`
 - `make run-server`
@@ -187,7 +210,20 @@ Each benchmark run records: hardware state, llama.cpp commit hash, model file ha
 
 ## Results
 
-> *To be filled in during the experiment. Table structure is pre-defined intentionally.*
+> *The CLI baseline below is the first measured data point. Server and concurrency results will be added after the HTTP layer is built.*
+
+### Raw CLI Baseline
+
+- Tool: `llama-completion`
+- Prompt: `Explain in one short paragraph what unified memory means on Apple Silicon.`
+- Load time: `14271.82 ms`
+- Prompt eval: `263.43 ms / 17 tokens` (`64.53 tokens/sec`)
+- Generation: `5635.77 ms / 98 tokens` (`17.39 tokens/sec`)
+- Total inference time: `5910.06 ms / 115 tokens`
+- Wall time: `20.78 s`
+- Max RSS: `2913042432 bytes` (`2.91 GB`)
+- Metal memory total: `5461 MiB`
+- Notes: `31/33` layers offloaded to GPU, context auto-fit observed at `4096`
 
 ### Memory Usage
 
@@ -234,6 +270,7 @@ Each benchmark run records: hardware state, llama.cpp commit hash, model file ha
 ## Raw Benchmark Logs
 
 See [`results/benchmarks.md`](results/benchmarks.md) for full run logs with timestamps, hardware state, and generation parameters for every experiment.
+The first raw CLI log is stored under `results/logs/cli-baseline-02.txt`.
 
 ---
 

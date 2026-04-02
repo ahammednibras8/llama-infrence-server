@@ -1,6 +1,7 @@
 LLAMA_DIR := llama.cpp
 VENV_DIR := .venv
 MODEL_DIR := models
+LOG_DIR := results/logs
 PYTHON_VERSION ?= 3.11
 SDK_CXX_HEADERS := /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1
 JOBS ?= $(shell sysctl -n hw.ncpu 2>/dev/null || echo 8)
@@ -9,10 +10,16 @@ MODEL_REPO := QuantFactory/Mistral-7B-Instruct-v0.2-GGUF
 MODEL_PATTERN := *Q4_K_M.gguf
 MODEL_FILE := Mistral-7B-Instruct-v0.2.Q4_K_M.gguf
 MODEL_PATH := $(MODEL_DIR)/$(MODEL_FILE)
+CLI_BIN := $(LLAMA_DIR)/build/bin/llama-completion
+CLI_CTX ?= 4096
+CLI_N_PREDICT ?= 128
+CLI_SEED ?= 42
+CLI_PROMPT ?= Explain in one short paragraph what unified memory means on Apple Silicon.
+CLI_LOG ?= $(LOG_DIR)/cli-baseline.txt
 
 .DEFAULT_GOAL := help
 
-.PHONY: help add-submodule submodule venv install download-model model-path build-llama clean-llama run-server
+.PHONY: help add-submodule submodule venv install download-model model-path cli-baseline build-llama clean-llama run-server
 
 help: ## Show every available target and what it does
 	@echo "Available targets:"
@@ -35,6 +42,19 @@ download-model: ## Download Mistral 7B Instruct v0.2 GGUF in Q4_K_M into models/
 
 model-path: ## Print the expected local path for the benchmark model
 	@echo $(MODEL_PATH)
+
+cli-baseline: ## Run the raw llama-completion baseline and save a benchmark log
+	mkdir -p $(LOG_DIR)
+	/usr/bin/time -l $(CLI_BIN) \
+		-m $(MODEL_PATH) \
+		-c $(CLI_CTX) \
+		-n $(CLI_N_PREDICT) \
+		-no-cnv \
+		--temp 0 \
+		--seed $(CLI_SEED) \
+		--perf \
+		-p "$(CLI_PROMPT)" \
+		2>&1 | tee $(CLI_LOG)
 
 build-llama: ## Configure and build llama.cpp with the macOS SDK libc++ workaround
 	cmake -S $(LLAMA_DIR) -B $(LLAMA_DIR)/build -DCMAKE_CXX_FLAGS='-isystem $(SDK_CXX_HEADERS)'
