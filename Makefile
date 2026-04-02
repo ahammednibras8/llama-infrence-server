@@ -20,7 +20,7 @@ CLI_LOG ?= $(LOG_DIR)/cli-baseline.txt
 
 .DEFAULT_GOAL := help
 
-.PHONY: help add-submodule submodule venv install download-model model-path cli-baseline cli-all-metal build-llama clean-llama run-server
+.PHONY: help add-submodule submodule venv install download-model model-path cli-baseline cli-all-metal cli-cpu-only build-llama clean-llama run-server
 
 help: ## Show every available target and what it does
 	@echo "Available targets:"
@@ -61,6 +61,11 @@ cli-baseline: ## Run the raw llama-completion baseline and save a benchmark log
 cli-all-metal: CLI_GPU_LAYERS = all
 cli-all-metal: CLI_LOG = $(if $(filter $(LOG_DIR)/cli-baseline.txt,$(CLI_LOG)),$(LOG_DIR)/cli-all-metal.txt,$(CLI_LOG))
 cli-all-metal: ## Run the raw llama-completion baseline with all 33 layers forced to Metal
+	$(MAKE) cli-baseline CLI_GPU_LAYERS="$(CLI_GPU_LAYERS)" CLI_LOG="$(CLI_LOG)"
+
+cli-cpu-only: CLI_GPU_LAYERS = 0
+cli-cpu-only: CLI_LOG = $(if $(filter $(LOG_DIR)/cli-baseline.txt,$(CLI_LOG)),$(LOG_DIR)/cli-cpu-only.txt,$(CLI_LOG))
+cli-cpu-only: ## Run the raw llama-completion baseline with CPU-only inference and zero GPU layers
 	$(MAKE) cli-baseline CLI_GPU_LAYERS="$(CLI_GPU_LAYERS)" CLI_LOG="$(CLI_LOG)"
 
 build-llama: ## Configure and build llama.cpp with the macOS SDK libc++ workaround

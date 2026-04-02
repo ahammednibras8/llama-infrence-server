@@ -138,6 +138,14 @@ make cli-all-metal CLI_LOG=results/logs/cli-all-metal-01.txt
 
 This forces `-ngl all` and attempts full Metal offload of all `33/33` layers.
 
+CPU-only comparison:
+
+```bash
+make cli-cpu-only CLI_LOG=results/logs/cli-cpu-only-01.txt
+```
+
+This forces `-ngl 0` and keeps all model layers on CPU.
+
 ### 8. Start the Inference Server
 
 ```bash
@@ -199,6 +207,7 @@ Main targets:
 - `make model-path`
 - `make cli-baseline`
 - `make cli-all-metal`
+- `make cli-cpu-only`
 - `make build-llama`
 - `make clean-llama`
 - `make run-server`
@@ -249,6 +258,20 @@ Each benchmark run records: hardware state, llama.cpp commit hash, model file ha
 - Max RSS: `2500460544 bytes` (`2.50 GB`)
 - Metal memory total: `5461 MiB`
 - Notes: `33/33` layers offloaded to GPU, free Metal headroom reduced to `741 MiB`, slightly worse inference latency than the `31/33` baseline
+
+### CPU-Only Comparison
+
+- Tool: `llama-completion`
+- GPU layers: `0`
+- Prompt: `Explain in one short paragraph what unified memory means on Apple Silicon.`
+- Load time: `61582.60 ms`
+- Prompt eval: `4927.31 ms / 17 tokens` (`3.45 tokens/sec`)
+- Generation: `8200.84 ms / 93 tokens` (`11.34 tokens/sec`)
+- Total inference time: `13484.44 ms / 110 tokens`
+- Wall time: `75.79 s`
+- Max RSS: `4524343296 bytes` (`4.52 GB`)
+- Metal memory total: `0 MiB`
+- Notes: `0/33` layers offloaded to GPU, model and KV cache stayed on host memory, clearly slower than both Metal-backed runs
 
 ### Memory Usage
 
