@@ -75,5 +75,5 @@ build-llama: ## Configure and build llama.cpp with the macOS SDK libc++ workarou
 clean-llama: ## Remove the llama.cpp build directory
 	rm -rf $(LLAMA_DIR)/build
 
-run-server: ## Start the Python server entrypoint using the local .venv
+run-server: ## Start the blocking single-threaded Python wrapper using the local .venv
 	$(VENV_DIR)/bin/python server/server.py

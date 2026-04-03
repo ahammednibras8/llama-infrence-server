@@ -165,8 +165,8 @@ llama-inference-server/
 │   └── .gitkeep                  # Folder tracked, models gitignored
 │
 ├── server/
-│   ├── server.py                 # Raw Python HTTP wrapper (the core build)
-│   └── handler.py                # Request/response parsing logic
+│   ├── server.py                 # Raw blocking Python HTTP wrapper (the core build)
+│   └── handler.py                # Intentionally empty until extraction is justified
 │
 ├── benchmark/
 │   ├── README.md                 # Explains benchmark code vs benchmark results
@@ -189,6 +189,16 @@ llama-inference-server/
 1. `llama.cpp` is a submodule, not a copy-paste. This pins an exact upstream commit so benchmark runs can be reproduced against the same compiled source.
 2. `models/` is gitignored except for `.gitkeep`. GGUF artifacts stay out of the repo; the README should record the exact model name and download source instead.
 3. `benchmark/` stays separate from `server/`. The server is the system under test, and the benchmark code is the measurement layer around it.
+
+### Deliberate Omissions
+
+The first server implementation is intentionally naive:
+
+- no async
+- no threading
+- no worker pool
+
+This is deliberate. The first experiment is supposed to show what a blocking server does when two requests arrive at once. `handler.py` stays empty for now, and request parsing lives in `server.py` until the experiment proves that separation is worth doing.
 
 ### Automation
 
