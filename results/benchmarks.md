@@ -19,13 +19,19 @@ This file is the canonical tracked benchmark record for this repository.
 - Sampling: `--temp 0 --seed 42`
 - Timing mode: `--perf` plus `/usr/bin/time -l`
 
-## Comparison Summary
+## CLI Comparison Summary
 
 | Run ID | Mode | GPU Layers | Observed Offload | Load Time | Prompt Eval | Prompt Throughput | Eval Time | Generation Throughput | Total Inference | Wall Time | Max RSS |
 |---|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|
 | `cli-baseline-02` | Auto Metal baseline | `auto` | `31/33` | `14271.82 ms` | `263.43 ms / 17 tok` | `64.53 tok/s` | `5635.77 ms / 98 tok` | `17.39 tok/s` | `5910.06 ms / 115 tok` | `20.78 s` | `2913042432 bytes` |
 | `cli-all-metal-01` | Full Metal experiment | `all` | `33/33` | `12723.11 ms` | `328.95 ms / 17 tok` | `51.68 tok/s` | `5702.88 ms / 98 tok` | `17.18 tok/s` | `6194.04 ms / 115 tok` | `19.31 s` | `2500460544 bytes` |
 | `cli-cpu-only-01` | CPU-only experiment | `0` | `0/33` | `61582.60 ms` | `4927.31 ms / 17 tok` | `3.45 tok/s` | `8200.84 ms / 93 tok` | `11.34 tok/s` | `13484.44 ms / 110 tok` | `75.79 s` | `4524343296 bytes` |
+
+## HTTP Summary
+
+| Run ID | Mode | Endpoint | Wall Time | Completion Tokens | Finish Reason | Model |
+|---|---|---|---:|---:|---|---|
+| `http-baseline-01` | Blocking HTTP baseline | `/generate` | `7.35 s` | `125` | `stop` | `mistral-7b-instruct-q4-k-m` |
 
 ## Canonical Runs
 
@@ -87,6 +93,25 @@ This file is the canonical tracked benchmark record for this repository.
   - Host used: `4797 MiB`
   - CPU_REPACK: `4094 MiB`
 - Notes: Metal still initializes because the binary was compiled with backend support, but inference remained CPU-only and was clearly slower.
+
+## HTTP Runs
+
+### `http-baseline-01` — Blocking HTTP Baseline
+
+- Log file: `results/logs/http-baseline-01.json`
+- Invocation: `curl http://127.0.0.1:8000/generate`
+- Endpoint: `/generate`
+- Prompt: `Explain in one short paragraph what unified memory means on Apple Silicon.`
+- Max tokens: `128`
+- Temperature: `0`
+- Seed: `42`
+- Wall time: `7.35 s`
+- Completion tokens: `125`
+- Prompt tokens: `24`
+- Total tokens: `149`
+- Finish reason: `stop`
+- Model alias returned: `mistral-7b-instruct-q4-k-m`
+- Notes: first HTTP baseline against the blocking Python wrapper; detailed CLI-vs-HTTP comparison should be interpreted carefully because token counts differ from the raw CLI baseline.
 
 ## Exploratory Run Kept Out Of The Comparison Table
 

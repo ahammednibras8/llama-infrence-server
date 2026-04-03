@@ -252,6 +252,8 @@ Each benchmark run records: hardware state, llama.cpp commit hash, model file ha
 
 The reliable takeaway so far: on this machine, `-ngl auto` is the best steady-state baseline, `-ngl all` is a useful comparison experiment, and `-ngl 0` is the control condition for showing what Metal changes.
 
+First HTTP baseline now recorded in [`results/benchmarks.md`](results/benchmarks.md): `http-baseline-01` completed in `7.35 s`, returned `125` completion tokens, and finished with `stop`.
+
 ### Memory Usage
 
 | Stage | RAM (GB) |
@@ -298,7 +300,7 @@ The reliable takeaway so far: on this machine, `-ngl auto` is the best steady-st
 
 - [`benchmark/README.md`](benchmark/README.md) explains what belongs in `benchmark/`.
 - [`results/benchmarks.md`](results/benchmarks.md) is the canonical tracked benchmark record.
-- `results/logs/` holds raw run output such as `cli-baseline-02.txt`, `cli-all-metal-01.txt`, and `cli-cpu-only-01.txt`.
+- `results/logs/` holds raw run output such as `cli-baseline-02.txt`, `cli-all-metal-01.txt`, `cli-cpu-only-01.txt`, and `http-baseline-01.json`.
 
 ---
 
