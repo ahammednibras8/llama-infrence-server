@@ -285,25 +285,21 @@ That benchmark fires two simultaneous requests at `/generate` and writes one com
 
 ### Concurrency Behavior
 
-> What actually happens at the HTTP layer when request 2 arrives while request 1 is generating? Does it queue, block, or fail? Document the exact behavior here.
+The naive Python wrapper behaves like a queue, not a parallel server. In `http-concurrency-01`, one request finished in `7.252 s` and the other in `13.958 s`, with total wall time `13.959 s`. That is the signature of serialization: one request got near-baseline latency, while the other waited behind it for almost one full extra request. The wrapper did not fail, but it also did not serve both requests concurrently.
 
 ---
 
 ## What I Learned
 
-> *Written after the experiment. Not a summary — a precise argument about what the numbers revealed.*
+1. A 7B model does run on an `8 GB` MacBook Air, but only inside a narrow operating envelope. `Mistral-7B-Instruct-v0.2.Q4_K_M` was usable because the model was quantized and the effective context settled at `4096`. The result is not “8 GB is plenty”; the result is “8 GB is just enough if the rest of the setup is disciplined.”
 
-### What I Expected vs What Happened
+2. More GPU is not automatically better. Forcing full Metal offload to `33/33` layers reduced free memory headroom and slightly hurt steady-state inference compared with `-ngl auto`. The important lesson is that GPU acceleration needs breathing space. If the device is packed too tightly, raw offload count stops being the right optimization target.
 
-*(The divergences between hypotheses and results — with the physics explanation for each gap.)*
+3. Metal changed the machine from barely practical to clearly usable. The CPU-only run was dramatically slower on load, prompt evaluation, and generation. On this hardware, Metal was not a cosmetic speedup; it was the difference between “this feels workable” and “this is obviously too slow for a local server.”
 
-### The Most Surprising Finding
+4. HTTP overhead was real, but the bigger story was lifecycle and queueing. The first HTTP baseline came in at `7.35 s`, which is close enough to show that the dominant cost is still inference, not JSON parsing. But once the model was wrapped in a blocking server, request waiting time became a real part of latency. That is the cost of the naive design.
 
-*(The one non-obvious thing this experiment revealed about inference infrastructure.)*
-
-### What This Changes About How I Think About Managed APIs
-
-*(What do the tradeoffs in services like OpenAI, Fireworks, Together look like differently after watching the hardware directly?)*
+5. The concurrency experiment justified the whole project. Two simultaneous requests did not produce shared progress; they produced serialization. One request completed at about baseline speed, and the other waited almost a full extra baseline behind it. That single result makes the design of async servers, worker pools, batching, and managed inference systems much easier to understand: their complexity exists to fight queueing, idle hardware gaps, and latency collapse under load.
 
 ---
 
