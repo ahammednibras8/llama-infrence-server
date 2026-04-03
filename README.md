@@ -219,6 +219,7 @@ Main targets:
 - `make cli-baseline`
 - `make cli-all-metal`
 - `make cli-cpu-only`
+- `make http-concurrency`
 - `make build-llama`
 - `make clean-llama`
 - `make run-server`
@@ -253,6 +254,16 @@ Each benchmark run records: hardware state, llama.cpp commit hash, model file ha
 The reliable takeaway so far: on this machine, `-ngl auto` is the best steady-state baseline, `-ngl all` is a useful comparison experiment, and `-ngl 0` is the control condition for showing what Metal changes.
 
 First HTTP baseline now recorded in [`results/benchmarks.md`](results/benchmarks.md): `http-baseline-01` completed in `7.35 s`, returned `125` completion tokens, and finished with `stop`.
+
+The first concurrency run is also now recorded there: `http-concurrency-01` showed the blocking wrapper queueing work, with one request finishing in `7.252 s` and the other in `13.958 s`.
+
+For the concurrency experiment, run:
+
+```bash
+make http-concurrency
+```
+
+That benchmark fires two simultaneous requests at `/generate` and writes one combined JSON log to `results/logs/http-concurrency-01.json`.
 
 ### Memory Usage
 
@@ -300,7 +311,7 @@ First HTTP baseline now recorded in [`results/benchmarks.md`](results/benchmarks
 
 - [`benchmark/README.md`](benchmark/README.md) explains what belongs in `benchmark/`.
 - [`results/benchmarks.md`](results/benchmarks.md) is the canonical tracked benchmark record.
-- `results/logs/` holds raw run output such as `cli-baseline-02.txt`, `cli-all-metal-01.txt`, `cli-cpu-only-01.txt`, and `http-baseline-01.json`.
+- `results/logs/` holds raw run output such as `cli-baseline-02.txt`, `cli-all-metal-01.txt`, `cli-cpu-only-01.txt`, `http-baseline-01.json`, and `http-concurrency-01.json`.
 
 ---
 

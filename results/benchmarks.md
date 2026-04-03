@@ -33,6 +33,12 @@ This file is the canonical tracked benchmark record for this repository.
 |---|---|---|---:|---:|---|---|
 | `http-baseline-01` | Blocking HTTP baseline | `/generate` | `7.35 s` | `125` | `stop` | `mistral-7b-instruct-q4-k-m` |
 
+## HTTP Concurrency Summary
+
+| Run ID | Mode | Endpoint | Total Wall Time | Request Durations | Status Codes | Observation |
+|---|---|---|---:|---|---|---|
+| `http-concurrency-01` | Blocking HTTP concurrency | `/generate` x2 | `13.959 s` | `13.958 s`, `7.252 s` | `200`, `200` | `requests_appear_serialized_or_queued` |
+
 ## Canonical Runs
 
 ### `cli-baseline-02` — Auto Metal Baseline
@@ -112,6 +118,28 @@ This file is the canonical tracked benchmark record for this repository.
 - Finish reason: `stop`
 - Model alias returned: `mistral-7b-instruct-q4-k-m`
 - Notes: first HTTP baseline against the blocking Python wrapper; detailed CLI-vs-HTTP comparison should be interpreted carefully because token counts differ from the raw CLI baseline.
+
+### `http-concurrency-01` — Blocking HTTP Concurrency
+
+- Log file: `results/logs/http-concurrency-01.json`
+- Invocation: `make http-concurrency`
+- Endpoint: `/generate`
+- Simultaneous requests: `2`
+- Total wall time: `13.959 s`
+- Request 1:
+  - Status code: `200`
+  - Duration: `13.958 s`
+  - Completion tokens: `125`
+  - Finish reason: `stop`
+  - Cached prompt tokens: `23`
+- Request 2:
+  - Status code: `200`
+  - Duration: `7.252 s`
+  - Completion tokens: `125`
+  - Finish reason: `stop`
+  - Cached prompt tokens: `0`
+- Observation: `requests_appear_serialized_or_queued`
+- Notes: this is the clearest sign that the wrapper is behaving as a blocking server. One request completed at roughly the single-request HTTP baseline, while the other sat behind it and finished almost one full baseline later. The queued request appears to have benefited from prompt caching, which is why the total wall time came in slightly under `2 x 7.35 s`.
 
 ## Exploratory Run Kept Out Of The Comparison Table
 
