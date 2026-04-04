@@ -228,14 +228,21 @@ Main targets:
 
 ## Methodology
 
-All benchmarks are run under controlled conditions:
+The completed measurements in this repo are:
 
-- **Single request baseline** — one request at a time, model fully loaded, no cache warm-up
-- **Concurrent load** — two simultaneous requests via threading, measuring throughput degradation
-- **Memory profiling** — RSS sampled at: process start → model load → single request → concurrent requests
-- **Quality delta** — same prompt across Q4_K_M and Q8_0, evaluated manually on reasoning, factual recall, and instruction following
+- **Single request CLI baseline** — `llama-completion` run directly against the local GGUF model
+- **Single request HTTP baseline** — one request through the blocking Python wrapper after server startup
+- **Concurrent HTTP load** — two simultaneous requests fired at the blocking wrapper to expose queueing behavior
+- **Mode comparisons** — the same CLI prompt tested under `-ngl auto`, `-ngl all`, and `-ngl 0`
 
-Each benchmark run records: hardware state, llama.cpp commit hash, model file hash, and exact generation parameters. Results are reproducible.
+Each recorded run in [`results/benchmarks.md`](results/benchmarks.md) includes the model, llama.cpp commit, prompt, context size, decoding settings, and the matching raw log file under `results/logs/`.
+
+Not measured yet:
+
+- staged memory profiling across process start, model load, and request phases
+- p50/p99 throughput distributions from repeated runs
+- TTFT as a separately captured metric
+- Q4 vs Q8 quality comparisons
 
 ---
 
@@ -265,23 +272,16 @@ make http-concurrency
 
 That benchmark fires two simultaneous requests at `/generate` and writes one combined JSON log to `results/logs/http-concurrency-01.json`.
 
-### Memory Usage
+### Pending Measurements
 
-| Stage | RAM (GB) |
-|-------|----------|
-| Process start | |
-| After model load | |
-| During single request | |
-| During 2 concurrent requests | |
+These metrics are intentionally not filled in yet because the repo does not have honest measurements for them:
 
-### Throughput
+- staged memory usage: process start, after model load, during single request, during two-request load
+- throughput distributions: p50 and p99 from repeated runs
+- TTFT as a separate benchmark metric
+- Q8_0 comparison runs
 
-| Scenario | Tokens/sec (p50) | Tokens/sec (p99) | Time-to-first-token (ms) |
-|----------|-----------------|-----------------|--------------------------|
-| Single request — Q4_K_M | | | |
-| Single request — Q8_0 | | | |
-| 2 concurrent — Q4_K_M | | | |
-| 2 concurrent — Q8_0 | | | |
+Until those benchmarks exist, [`results/benchmarks.md`](results/benchmarks.md) remains limited to the measurements already captured.
 
 ### Concurrency Behavior
 
