@@ -219,6 +219,7 @@ Main targets:
 - `make cli-baseline`
 - `make cli-all-metal`
 - `make cli-cpu-only`
+- `make memory-profile`
 - `make http-concurrency`
 - `make build-llama`
 - `make clean-llama`
@@ -234,15 +235,16 @@ The completed measurements in this repo are:
 - **Single request HTTP baseline** — one request through the blocking Python wrapper after server startup
 - **Concurrent HTTP load** — two simultaneous requests fired at the blocking wrapper to expose queueing behavior
 - **Mode comparisons** — the same CLI prompt tested under `-ngl auto`, `-ngl all`, and `-ngl 0`
+- **RSS staging** — combined wrapper plus backend RSS sampled at startup, after model load, during one request, and during the two-request phase
 
 Each recorded run in [`results/benchmarks.md`](results/benchmarks.md) includes the model, llama.cpp commit, prompt, context size, decoding settings, and the matching raw log file under `results/logs/`.
 
 Not measured yet:
 
-- staged memory profiling across process start, model load, and request phases
 - p50/p99 throughput distributions from repeated runs
 - TTFT as a separately captured metric
 - Q4 vs Q8 quality comparisons
+- full unified-memory accounting beyond process RSS
 
 ---
 
@@ -264,6 +266,8 @@ First HTTP baseline now recorded in [`results/benchmarks.md`](results/benchmarks
 
 The first concurrency run is also now recorded there: `http-concurrency-01` showed the blocking wrapper queueing work, with one request finishing in `7.252 s` and the other in `13.958 s`.
 
+The first staged RSS profile is now recorded there as `memory-profile-01`.
+
 For the concurrency experiment, run:
 
 ```bash
@@ -272,11 +276,21 @@ make http-concurrency
 
 That benchmark fires two simultaneous requests at `/generate` and writes one combined JSON log to `results/logs/http-concurrency-01.json`.
 
+### Memory Usage (RSS)
+
+| Stage | RSS (MiB) | RSS (GiB) |
+|-------|-----------|-----------|
+| Process start | `0.66` | `0.00` |
+| After model load | `490.55` | `0.48` |
+| During single request | `769.92` | `0.75` |
+| During 2 concurrent requests | `769.00` | `0.75` |
+
+This table is process RSS for the Python wrapper plus its `llama-server` child, not total Apple Silicon unified memory usage. On this machine, Metal allocations are much larger than RSS and are better reflected by the CLI memory breakdowns in [`results/benchmarks.md`](results/benchmarks.md). The useful finding here is that RSS barely changed between one request and the queued two-request phase, which matches the observed serialization behavior.
+
 ### Missing Before Publication
 
 These are still unfinished and need real measurements before the artifact is fully complete:
 
-- staged memory usage: process start, after model load, during single request, during two-request load
 - Q8_0 comparison runs, including throughput and qualitative comparison against Q4_K_M
 - throughput distributions from repeated runs, not just single-run point estimates
 - TTFT captured as its own benchmark metric

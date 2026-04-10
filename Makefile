@@ -18,10 +18,11 @@ CLI_GPU_LAYERS ?= auto
 CLI_PROMPT ?= Explain in one short paragraph what unified memory means on Apple Silicon.
 CLI_LOG ?= $(LOG_DIR)/cli-baseline.txt
 HTTP_CONCURRENCY_LOG ?= $(LOG_DIR)/http-concurrency-01.json
+MEMORY_PROFILE_LOG ?= $(LOG_DIR)/memory-profile-01.json
 
 .DEFAULT_GOAL := help
 
-.PHONY: help add-submodule submodule venv install download-model model-path cli-baseline cli-all-metal cli-cpu-only http-concurrency build-llama clean-llama run-server
+.PHONY: help add-submodule submodule venv install download-model model-path cli-baseline cli-all-metal cli-cpu-only memory-profile http-concurrency build-llama clean-llama run-server
 
 help: ## Show every available target and what it does
 	@echo "Available targets:"
@@ -68,6 +69,10 @@ cli-cpu-only: CLI_GPU_LAYERS = 0
 cli-cpu-only: CLI_LOG = $(if $(filter $(LOG_DIR)/cli-baseline.txt,$(CLI_LOG)),$(LOG_DIR)/cli-cpu-only.txt,$(CLI_LOG))
 cli-cpu-only: ## Run the raw llama-completion baseline with CPU-only inference and zero GPU layers
 	$(MAKE) cli-baseline CLI_GPU_LAYERS="$(CLI_GPU_LAYERS)" CLI_LOG="$(CLI_LOG)"
+
+memory-profile: ## Measure combined wrapper+backend RSS across startup, single-request, and two-request phases
+	mkdir -p $(LOG_DIR)
+	$(VENV_DIR)/bin/python benchmark/memory.py --output $(MEMORY_PROFILE_LOG)
 
 http-concurrency: ## Fire two simultaneous HTTP requests at /generate and save one combined log
 	mkdir -p $(LOG_DIR)

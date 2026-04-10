@@ -39,6 +39,12 @@ This file is the canonical tracked benchmark record for this repository.
 |---|---|---|---:|---|---|---|
 | `http-concurrency-01` | Blocking HTTP concurrency | `/generate` x2 | `13.959 s` | `13.958 s`, `7.252 s` | `200`, `200` | `requests_appear_serialized_or_queued` |
 
+## RSS Memory Summary
+
+| Run ID | Mode | Process Start RSS | After Model Load RSS | Peak RSS During Single Request | Peak RSS During Two Requests |
+|---|---|---:|---:|---:|---:|
+| `memory-profile-01` | Blocking wrapper + backend RSS | `0.66 MiB` | `490.55 MiB` | `769.92 MiB` | `769.00 MiB` |
+
 ## Canonical Runs
 
 ### `cli-baseline-02` — Auto Metal Baseline
@@ -140,6 +146,21 @@ This file is the canonical tracked benchmark record for this repository.
   - Cached prompt tokens: `0`
 - Observation: `requests_appear_serialized_or_queued`
 - Notes: this is the clearest sign that the wrapper is behaving as a blocking server. One request completed at roughly the single-request HTTP baseline, while the other sat behind it and finished almost one full baseline later. The queued request appears to have benefited from prompt caching, which is why the total wall time came in slightly under `2 x 7.35 s`.
+
+## Memory Runs
+
+### `memory-profile-01` — Blocking Wrapper RSS Profile
+
+- Log file: `results/logs/memory-profile-01.json`
+- Invocation: `make memory-profile`
+- Scope measured: combined RSS of the Python wrapper and its `llama-server` child process
+- GPU layers requested: `auto`
+- Context size: `4096`
+- Process start RSS: `688128 bytes` (`0.66 MiB`)
+- After model load RSS: `514375680 bytes` (`490.55 MiB`)
+- Peak RSS during single request: `807321600 bytes` (`769.92 MiB`)
+- Peak RSS during two concurrent requests: `806354944 bytes` (`769.00 MiB`)
+- Notes: this is an RSS measurement, not total Apple Silicon unified memory usage. Metal allocations live outside ordinary process RSS, so these values should be interpreted alongside the CLI memory breakdowns above. The key observation is that the two-request phase did not materially increase RSS over the single-request phase, which matches the queueing behavior seen in `http-concurrency-01`.
 
 ## Exploratory Run Kept Out Of The Comparison Table
 
