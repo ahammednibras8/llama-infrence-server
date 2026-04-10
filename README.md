@@ -272,16 +272,16 @@ make http-concurrency
 
 That benchmark fires two simultaneous requests at `/generate` and writes one combined JSON log to `results/logs/http-concurrency-01.json`.
 
-### Pending Measurements
+### Missing Before Publication
 
-These metrics are intentionally not filled in yet because the repo does not have honest measurements for them:
+These are still unfinished and need real measurements before the artifact is fully complete:
 
 - staged memory usage: process start, after model load, during single request, during two-request load
-- throughput distributions: p50 and p99 from repeated runs
-- TTFT as a separate benchmark metric
-- Q8_0 comparison runs
+- Q8_0 comparison runs, including throughput and qualitative comparison against Q4_K_M
+- throughput distributions from repeated runs, not just single-run point estimates
+- TTFT captured as its own benchmark metric
 
-Until those benchmarks exist, [`results/benchmarks.md`](results/benchmarks.md) remains limited to the measurements already captured.
+Until those benchmarks exist, [`results/benchmarks.md`](results/benchmarks.md) remains intentionally limited to the measurements already captured.
 
 ### Concurrency Behavior
 
@@ -291,15 +291,17 @@ The naive Python wrapper behaves like a queue, not a parallel server. In `http-c
 
 ## What I Learned
 
-1. A 7B model does run on an `8 GB` MacBook Air, but only inside a narrow operating envelope. `Mistral-7B-Instruct-v0.2.Q4_K_M` was usable because the model was quantized and the effective context settled at `4096`. The result is not “8 GB is plenty”; the result is “8 GB is just enough if the rest of the setup is disciplined.”
+These five arguments are the actual output of the project. The code matters because it produced these results, but the value is in what the results mean.
 
-2. More GPU is not automatically better. Forcing full Metal offload to `33/33` layers reduced free memory headroom and slightly hurt steady-state inference compared with `-ngl auto`. The important lesson is that GPU acceleration needs breathing space. If the device is packed too tightly, raw offload count stops being the right optimization target.
+1. A 7B model does run on an `8 GB` MacBook Air, but only inside a narrow operating envelope. `cli-baseline-02` showed `Mistral-7B-Instruct-v0.2.Q4_K_M` working with an effective context of `4096` and total Metal memory of about `5.3 GiB`. The result is not “8 GB is plenty”; the result is “8 GB is just enough if quantization, context size, and headroom are treated as hard constraints.”
 
-3. Metal changed the machine from barely practical to clearly usable. The CPU-only run was dramatically slower on load, prompt evaluation, and generation. On this hardware, Metal was not a cosmetic speedup; it was the difference between “this feels workable” and “this is obviously too slow for a local server.”
+2. More GPU is not automatically better. `cli-all-metal-01` forced `33/33` layers to Metal, but it still lost to `cli-baseline-02` on steady-state inference: prompt throughput fell from `64.53 tok/s` to `51.68 tok/s`, and total inference worsened from `5910.06 ms` to `6194.04 ms`. The real lesson is that GPU acceleration needs breathing space; raw offload count is not the optimization target.
 
-4. HTTP overhead was real, but the bigger story was lifecycle and queueing. The first HTTP baseline came in at `7.35 s`, which is close enough to show that the dominant cost is still inference, not JSON parsing. But once the model was wrapped in a blocking server, request waiting time became a real part of latency. That is the cost of the naive design.
+3. Metal changed the machine from barely practical to clearly usable. `cli-cpu-only-01` collapsed prompt throughput from `64.53 tok/s` to `3.45 tok/s` and pushed wall time from `20.78 s` to `75.79 s`. On this hardware, Metal was not a cosmetic speedup; it was the difference between a workable local server and an obviously degraded one.
 
-5. The concurrency experiment justified the whole project. Two simultaneous requests did not produce shared progress; they produced serialization. One request completed at about baseline speed, and the other waited almost a full extra baseline behind it. That single result makes the design of async servers, worker pools, batching, and managed inference systems much easier to understand: their complexity exists to fight queueing, idle hardware gaps, and latency collapse under load.
+4. HTTP overhead was real, but it was smaller than lifecycle and queueing costs. `http-baseline-01` landed at `7.35 s`, which is meaningfully above the raw CLI inference path but still much closer to it than to the queued `13.958 s` request in `http-concurrency-01`; cold CLI runs also paid `12.7-14.3 s` just to load the model. The practical lesson is that transport overhead matters less than model residency and server design once the system is under real use.
+
+5. The concurrency experiment justified the whole project. In `http-concurrency-01`, one request finished in `7.252 s` and the other in `13.958 s`, with total wall time `13.959 s`. That is not graceful degradation; it is serialization. This is the clearest argument in the repo for why batching, async orchestration, worker pools, and managed inference systems exist at all.
 
 ---
 
